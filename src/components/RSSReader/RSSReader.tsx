@@ -1,19 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Plus, RefreshCw, Send, Star, Calendar } from 'lucide-react';
+import { Plus, RefreshCw, Send, Star, Calendar, Sparkles } from 'lucide-react';
 import { RSSParser } from '@/services/rssParser';
 import { storageService, type Feed, type Article } from '@/services/storageService';
 import { toast } from '@/hooks/use-toast';
 
 interface RSSReaderProps {
   onSendToEditor: (article: Article) => void;
+  onSendToSummarizer: (article: Article) => void;
 }
 
-export const RSSReader: React.FC<RSSReaderProps> = ({ onSendToEditor }) => {
+export const RSSReader: React.FC<RSSReaderProps> = ({ onSendToEditor, onSendToSummarizer }) => {
   const [feeds, setFeeds] = useState<Feed[]>([]);
   const [articles, setArticles] = useState<Article[]>([]);
   const [selectedFeed, setSelectedFeed] = useState<string | null>(null);
@@ -111,6 +111,11 @@ export const RSSReader: React.FC<RSSReaderProps> = ({ onSendToEditor }) => {
   const handleSendToEditor = (article: Article) => {
     markAsRead(article);
     onSendToEditor(article);
+  };
+
+  const handleSendToSummarizer = (article: Article) => {
+    markAsRead(article);
+    onSendToSummarizer(article);
   };
 
   return (
@@ -227,6 +232,14 @@ export const RSSReader: React.FC<RSSReaderProps> = ({ onSendToEditor }) => {
                       >
                         <Send className="h-4 w-4 mr-1" />
                         Edit
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSendToSummarizer(article)}
+                      >
+                        <Sparkles className="h-4 w-4 mr-1" />
+                        Summarize
                       </Button>
                       <Button
                         size="sm"

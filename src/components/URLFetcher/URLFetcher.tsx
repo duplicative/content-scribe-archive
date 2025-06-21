@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Link, Download, Send, Save, RefreshCw } from 'lucide-react';
+import { Link, Download, Send, Save, RefreshCw, Sparkles } from 'lucide-react';
 import { URLToMarkdownConverter } from '@/services/urlToMarkdown';
 import { toast } from '@/hooks/use-toast';
 import type { Article } from '@/services/storageService';
@@ -13,9 +12,10 @@ import type { Article } from '@/services/storageService';
 interface URLFetcherProps {
   onSendToEditor: (article: Article) => void;
   onSaveToKnowledge: (article: Article) => void;
+  onSendToSummarizer: (article: Article) => void;
 }
 
-export const URLFetcher: React.FC<URLFetcherProps> = ({ onSendToEditor, onSaveToKnowledge }) => {
+export const URLFetcher: React.FC<URLFetcherProps> = ({ onSendToEditor, onSaveToKnowledge, onSendToSummarizer }) => {
   const [url, setUrl] = useState('');
   const [urls, setUrls] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -133,6 +133,23 @@ export const URLFetcher: React.FC<URLFetcherProps> = ({ onSendToEditor, onSaveTo
     }
   };
 
+  const handleSendToSummarizer = () => {
+    try {
+      const article = createArticleFromContent();
+      onSendToSummarizer(article);
+      toast({
+        title: 'Sent to AI Summarizer',
+        description: 'Article is ready for AI summarization',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to send to summarizer',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const handleSaveToKnowledge = () => {
     try {
       const article = createArticleFromContent();
@@ -154,6 +171,7 @@ export const URLFetcher: React.FC<URLFetcherProps> = ({ onSendToEditor, onSaveTo
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[calc(100vh-12rem)]">
       {/* URL Input Section */}
       <div className="space-y-4">
+        {/* URL Input Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -264,6 +282,10 @@ export const URLFetcher: React.FC<URLFetcherProps> = ({ onSendToEditor, onSaveTo
                     <Button size="sm" variant="outline" onClick={handleSendToEditor}>
                       <Send className="h-4 w-4 mr-1" />
                       Edit
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleSendToSummarizer}>
+                      <Sparkles className="h-4 w-4 mr-1" />
+                      Summarize
                     </Button>
                     <Button size="sm" onClick={handleSaveToKnowledge}>
                       <Save className="h-4 w-4 mr-1" />
