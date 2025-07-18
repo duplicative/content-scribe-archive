@@ -3,6 +3,13 @@ interface SummarizeRequest {
   content: string;
   apiKey: string;
   model: string;
+  prompt?: string;
+}
+
+interface CustomPrompt {
+  id: string;
+  name: string;
+  content: string;
 }
 
 interface SummarizeResponse {
@@ -14,10 +21,12 @@ export class AISummarizer {
 
 `;
 
-  static async summarizeText({ content, apiKey, model }: SummarizeRequest): Promise<string> {
+  static async summarizeText({ content, apiKey, model, prompt }: SummarizeRequest): Promise<string> {
     if (!apiKey) {
       throw new Error('API key is required');
     }
+
+    const promptToUse = prompt || this.DEFAULT_PROMPT;
 
     const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
@@ -32,7 +41,7 @@ export class AISummarizer {
         messages: [
           {
             role: 'user',
-            content: this.DEFAULT_PROMPT + content
+            content: promptToUse + content
           }
         ],
         temperature: 0.7,
@@ -71,5 +80,51 @@ export class AISummarizer {
 
   static getPreferredModel(): string {
     return localStorage.getItem('preferred_ai_model') || 'anthropic/claude-3-haiku';
+  }
+
+  static getDefaultPrompts(): CustomPrompt[] {
+    return [
+      {
+        id: 'default',
+        name: 'Default Summary',
+        content: 'Please provide a comprehensive summary of the following article. Focus on the main points, key insights, and important details. Make the summary clear and well-structured:\n\n'
+      },
+      {
+        id: 'brief',
+        name: 'Brief Summary',
+        content: 'Provide a brief, concise summary of the following article in 2-3 sentences:\n\n'
+      },
+      {
+        id: 'bullet-points',
+        name: 'Bullet Points',
+        content: 'Summarize the following article using bullet points to highlight the key information:\n\n'
+      },
+      {
+        id: 'academic',
+        name: 'Academic Analysis',
+        content: 'Provide an academic-style analysis and summary of the following article, including methodology, findings, and implications:\n\n'
+      }
+    ];
+  }
+
+  static saveCustomPrompts(prompts: CustomPrompt[]) {
+    localStorage.setItem('custom_prompts', JSON.stringify(prompts));
+  }
+
+  static getCustomPrompts(): CustomPrompt[] {
+    const saved = localStorage.getItem('custom_prompts');
+    return saved ? JSON.parse(saved) : [];
+  }
+
+  static getAllPrompts(): CustomPrompt[] {
+    return [...this.getDefaultPrompts(), ...this.getCustomPrompts()];
+  }
+
+  static saveSelectedPrompt(promptId: string) {
+    localStorage.setItem('selected_prompt', promptId);
+  }
+
+  static getSelectedPrompt(): string {
+    return localStorage.getItem('selected_prompt') || 'default';
   }
 }

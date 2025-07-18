@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Bot, Save, RefreshCw, Sparkles } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Bot, Save, RefreshCw, Sparkles, Plus } from 'lucide-react';
 import { AISummarizer as AISummarizerService } from '@/services/aiSummarizer';
 import { storageService, type Article } from '@/services/storageService';
 import { toast } from '@/hooks/use-toast';
@@ -18,6 +19,11 @@ interface AISummarizerProps {
 export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKnowledge }) => {
   const [apiKey, setApiKey] = useState('');
   const [selectedModel, setSelectedModel] = useState('');
+  const [selectedPrompt, setSelectedPrompt] = useState('');
+  const [customPrompts, setCustomPrompts] = useState<Array<{id: string, name: string, content: string}>>([]);
+  const [newPromptName, setNewPromptName] = useState('');
+  const [newPromptContent, setNewPromptContent] = useState('');
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [summary, setSummary] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,6 +32,8 @@ export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKno
     // Load saved settings
     setApiKey(AISummarizerService.getApiKey());
     setSelectedModel(AISummarizerService.getPreferredModel());
+    setSelectedPrompt(AISummarizerService.getSelectedPrompt());
+    setCustomPrompts(AISummarizerService.getCustomPrompts());
   }, []);
 
   const handleApiKeyChange = (value: string) => {
@@ -36,6 +44,34 @@ export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKno
   const handleModelChange = (value: string) => {
     setSelectedModel(value);
     AISummarizerService.savePreferredModel(value);
+  };
+
+  const handlePromptChange = (value: string) => {
+    setSelectedPrompt(value);
+    AISummarizerService.saveSelectedPrompt(value);
+  };
+
+  const handleAddPrompt = () => {
+    if (!newPromptName.trim() || !newPromptContent.trim()) return;
+    
+    const newPrompt = {
+      id: Date.now().toString(),
+      name: newPromptName.trim(),
+      content: newPromptContent.trim()
+    };
+    
+    const updatedPrompts = [...customPrompts, newPrompt];
+    setCustomPrompts(updatedPrompts);
+    AISummarizerService.saveCustomPrompts(updatedPrompts);
+    
+    setNewPromptName('');
+    setNewPromptContent('');
+    setIsDialogOpen(false);
+    
+    toast({
+      title: 'Prompt saved',
+      description: 'Custom prompt has been added successfully',
+    });
   };
 
   const handleSummarize = async () => {
@@ -54,10 +90,14 @@ export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKno
     setSummary('');
 
     try {
+      const allPrompts = AISummarizerService.getAllPrompts();
+      const selectedPromptObj = allPrompts.find(p => p.id === selectedPrompt);
+      
       const generatedSummary = await AISummarizerService.summarizeText({
         content: article.content,
         apiKey,
-        model: selectedModel
+        model: selectedModel,
+        prompt: selectedPromptObj?.content
       });
 
       setSummary(generatedSummary);
@@ -111,6 +151,7 @@ export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKno
   };
 
   const availableModels = AISummarizerService.getAvailableModels();
+  const allPrompts = AISummarizerService.getAllPrompts();
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -156,6 +197,63 @@ export const AISummarizer: React.FC<AISummarizerProps> = ({ article, onSaveToKno
                 {availableModels.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
                     {model.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Prompt Template</label>
+              <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Plus className="h-4 w-4 mr-1" />
+                    Add Prompt
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Custom Prompt</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Prompt Name</label>
+                      <Input
+                        placeholder="Enter prompt name..."
+                        value={newPromptName}
+                        onChange={(e) => setNewPromptName(e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Prompt Content</label>
+                      <Textarea
+                        placeholder="Enter your prompt template..."
+                        value={newPromptContent}
+                        onChange={(e) => setNewPromptContent(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleAddPrompt}
+                      disabled={!newPromptName.trim() || !newPromptContent.trim()}
+                      className="w-full"
+                    >
+                      Save Prompt
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            </div>
+            <Select value={selectedPrompt} onValueChange={handlePromptChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a prompt template" />
+              </SelectTrigger>
+              <SelectContent>
+                {allPrompts.map((prompt) => (
+                  <SelectItem key={prompt.id} value={prompt.id}>
+                    {prompt.name}
                   </SelectItem>
                 ))}
               </SelectContent>
