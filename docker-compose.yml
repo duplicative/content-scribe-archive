@@ -7,13 +7,13 @@ services:
       target: development
     container_name: content-scribe-app
     ports:
-      - "8080:8080"
+      - "3100:3100"
     volumes:
       - .:/app
       - /app/node_modules
     environment:
       - NODE_ENV=development
-      - VITE_API_URL=http://localhost:8080
+      - VITE_API_URL=http://localhost:3100
     depends_on:
       - db
       - redis
@@ -57,7 +57,7 @@ services:
   #     dockerfile: Dockerfile
   #   container_name: content-scribe-api
   #   ports:
-  #     - "8080:8080"
+  
   #   environment:
   #     - DATABASE_URL=postgresql://postgres:postgres@db:5432/content_scribe
   #     - REDIS_URL=redis://redis:6379
