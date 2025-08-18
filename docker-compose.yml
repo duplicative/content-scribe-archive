@@ -9,7 +9,7 @@ services:
       target: development
     container_name: content-scribe-app
     ports:
-      - "3000:3000"
+      - "8080:8080"
     volumes:
       - .:/app
       - /app/node_modules
